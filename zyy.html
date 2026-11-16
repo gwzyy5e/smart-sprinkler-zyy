@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Sprinkler Monitor - Zyy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+        body { background-color: #0b0f19; color: #00ffcc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { width: 100%; max-width: 450px; background: #131c2e; border: 2px solid #00ffcc; border-radius: 12px; padding: 25px; box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); }
+        hh1 { text-align: center; font-size: 22px; margin-bottom: 20px; text-shadow: 0 0 10px rgba(0, 255, 204, 0.5); letter-spacing: 2px; }
+        .card { background: #0b0f19; border: 1px solid #1f293d; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .label { font-size: 14px; color: #8ba2cc; }
+        .value { font-size: 24px; font-weight: bold; text-shadow: 0 0 8px currentColor; }
+        .status-box { text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 16px; margin-top: 15px; letter-spacing: 1px; }
+        .off { background: rgba(255, 0, 85, 0.15); color: #ff0055; border: 1px solid #ff0055; box-shadow: 0 0 10px rgba(255, 0, 85, 0.3); }
+        .on { background: rgba(0, 255, 204, 0.15); color: #00ffcc; border: 1px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+        #log { font-size: 11px; color: #556b8d; text-align: center; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SMART SPRINKLER SYSTEM</h1>
+        <div class="card">
+            <span class="label">SUHU (TEMP)</span>
+            <span class="value" id="temp">-- °C</span>
+        </div>
+        <div class="card">
+            <span class="label">KELEMBAPAN (HUM)</span>
+            <span class="value" id="hum">-- %</span>
+        </div>
+        <div class="card">
+            <span class="label">STATUS POMPA</span>
+            <span class="value" id="pump" style="font-size: 18px;">--</span>
+        </div>
+        <div id="statusBox" class="status-box off">SISTEM: STANDBY / AMAN</div>
+        <div id="log">Menghubungkan ke Broker MQTT...</div>
+    </div>
+
+    <script>
+        const clientId = "web_client_" + Math.random().toString(16).substring(2, 8);
+        const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "/mqtt", clientId);
+
+        client.onConnectionLost = onConnectionLost;
+        client.onMessageArrived = onMessageArrived;
+
+        client.connect({
+            onSuccess: onConnect,
+            onFailure: onFailure,
+            useSSL: false
+        });
+
+        function onConnect() {
+            document.getElementById("log").innerText = "Status: Terhubung ke HiveMQ Broker!";
+            client.subscribe("smartsprinkler/sby-7f3a/data");
+            client.subscribe("smartsprinkler/sby-7f3a/status");
+        }
+
+        function onFailure(message) {
+            document.getElementById("log").innerText = "Koneksi Gagal: " + message.errorMessage;
+        }
+
+        function onConnectionLost(responseObject) {
+            if (responseObject.errorCode !== 0) {
+                document.getElementById("log").innerText = "Koneksi terputus: " + responseObject.errorMessage;
+            }
+        }
+
+        function onMessageArrived(message) {
+            let topic = message.destinationName;
+            let payload = message.payloadString;
+
+            if (topic === "smartsprinkler/sby-7f3a/data") {
+                try {
+                    let data = JSON.parse(payload);
+                    document.getElementById("temp").innerText = data.temperature.toFixed(1) + " °C";
+                    document.getElementById("hum").innerText = data.humidity.toFixed(1) + " %";
+                } catch(e) {
+                    console.log("Error parsing JSON");
+                }
+            } else if (topic === "smartsprinkler/sby-7f3a/status") {
+                let box = document.getElementById("statusBox");
+                let pumpTxt = document.getElementById("pump");
+                if (payload === "ON") {
+                    box.className = "status-box on";
+                    box.innerText = "BAHAYA: API/PANAS TERDETEKSI!";
+                    pumpTxt.innerText = "MENYALA (ON)";
+                    pumpTxt.style.color = "#00ffcc";
+                } else {
+                    box.className = "status-box off";
+                    box.innerText = "SISTEM: AMAN (NORMAL)";
+                    pumpTxt.innerText = "MATI (OFF)";
+                    pumpTxt.style.color = "#ff0055";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
