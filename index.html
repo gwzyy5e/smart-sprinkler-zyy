@@ -128,7 +128,7 @@
 
     <script>
         const clientId = "noir_client_" + Math.random().toString(16).substring(2, 8);
-        const client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "/mqtt", clientId);
+        const client = new Paho.MQTT.Client("broker.emqx.io", 8084, "/mqtt", clientId);
 
         client.onConnectionLost = onConnectionLost;
         client.onMessageArrived = onMessageArrived;
@@ -136,7 +136,7 @@
         client.connect({
             onSuccess: onConnect,
             onFailure: onFailure,
-            useSSL: false
+            useSSL: true
         });
 
         function onConnect() {
@@ -165,7 +165,6 @@
                     document.getElementById("temp").innerText = data.temperature.toFixed(1) + " °C";
                     document.getElementById("hum").innerText = data.humidity.toFixed(1) + " %";
                     
-                    // Baca status pompa langsung dari JSON data ESP32
                     let box = document.getElementById("statusBox");
                     let pumpTxt = document.getElementById("pump");
                     if (data.pump === true) {
