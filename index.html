@@ -11,7 +11,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             background-color: #080808; 
-            /* Efek latar belakang garis koran/komik noir klasik (halftone subtle) + vignette */
             background-image: 
                 radial-gradient(circle, rgba(255,255,255,0.03) 10%, transparent 10%),
                 linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.95));
@@ -31,11 +30,9 @@
             border: 3px solid #2b2b2b; 
             border-radius: 2px; 
             padding: 30px; 
-            /* Efek bayangan komik noir yang tebal dan tegas */
             box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.9), 0 15px 30px rgba(0, 0, 0, 0.7); 
             position: relative;
         }
-        /* Aksen garis koyak komik di pojok */
         .container::before {
             content: "";
             position: absolute;
@@ -167,20 +164,21 @@
                     let data = JSON.parse(payload);
                     document.getElementById("temp").innerText = data.temperature.toFixed(1) + " °C";
                     document.getElementById("hum").innerText = data.humidity.toFixed(1) + " %";
+                    
+                    // Baca status pompa langsung dari JSON data ESP32
+                    let box = document.getElementById("statusBox");
+                    let pumpTxt = document.getElementById("pump");
+                    if (data.pump === true) {
+                        box.className = "status-box on";
+                        box.innerText = "WARNING: HEAT DETECTED";
+                        pumpTxt.innerText = "ACTIVE";
+                    } else {
+                        box.className = "status-box off";
+                        box.innerText = "STATUS: SECURE / NORMAL";
+                        pumpTxt.innerText = "STANDBY";
+                    }
                 } catch(e) {
                     console.log("JSON parse error");
-                }
-            } else if (topic === "smartsprinkler/sby-7f3a/status") {
-                let box = document.getElementById("statusBox");
-                let pumpTxt = document.getElementById("pump");
-                if (payload === "ON") {
-                    box.className = "status-box on";
-                    box.innerText = "WARNING: HEAT DETECTED";
-                    pumpTxt.innerText = "ACTIVE";
-                } else {
-                    box.className = "status-box off";
-                    box.innerText = "STATUS: SECURE / NORMAL";
-                    pumpTxt.innerText = "STANDBY";
                 }
             }
         }
